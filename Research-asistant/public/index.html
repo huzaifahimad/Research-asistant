@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScholarAI — Research Assistant Platform</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css">
+</head>
+
+<body>
+
+    <!-- AUTH MODAL -->
+    <div id="auth-overlay" class="auth-overlay">
+        <div class="auth-modal">
+            <div class="auth-logo">🔬</div>
+            <h2 class="auth-title">Welcome to ScholarAI</h2>
+            <p class="auth-sub">Your AI-powered research companion</p>
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchAuthTab('login')">Quick Start</button>
+                <button class="auth-tab" onclick="switchAuthTab('register')">New Setup</button>
+            </div>
+            <form id="auth-form-login" class="auth-form" onsubmit="handleLogin(event)">
+                <input type="text" id="login-email" placeholder="Enter your name" required>
+                <button type="submit" class="btn btn-primary auth-submit">Start Researching →</button>
+                <div id="login-error" class="auth-error"></div>
+                <div style="font-size:0.7rem;color:var(--text3);margin-top:4px;">API key is configured in the server's
+                    .env file.</div>
+            </form>
+            <form id="auth-form-register" class="auth-form" style="display:none" onsubmit="handleRegister(event)">
+                <input type="text" id="reg-name" placeholder="Enter your name" required>
+                <button type="submit" class="btn btn-primary auth-submit">Start Researching →</button>
+                <div id="reg-error" class="auth-error"></div>
+                <div style="font-size:0.7rem;color:var(--text3);margin-top:4px;">Your data is stored locally in your
+                    browser.</div>
+            </form>
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <div class="logo">
+            <div class="logo-icon">🔬</div>
+            <div>
+                <div class="logo-text">ScholarAI</div>
+                <div class="logo-sub">Research Platform</div>
+            </div>
+        </div>
+        <nav class="nav">
+            <div class="nav-section">
+                <div class="nav-label">Overview</div>
+                <div class="nav-item active" onclick="showPanel('home')"><span class="icon">⊞</span> Dashboard</div>
+            </div>
+            <div class="nav-section">
+                <div class="nav-label">Tools</div>
+                <div class="nav-item" onclick="showPanel('formatter')"><span class="icon">📄</span> Article Formatter
+                </div>
+                <div class="nav-item" onclick="showPanel('litreview')"><span class="icon">📚</span> Literature Review
+                </div>
+                <div class="nav-item" onclick="showPanel('journal')"><span class="icon">🔍</span> Journal Finder <span
+                        class="badge new">New</span></div>
+                <div class="nav-item" onclick="showPanel('citation')"><span class="icon">✅</span> Citation Verifier
+                </div>
+                <div class="nav-item" onclick="showPanel('thesis')"><span class="icon">🎓</span> Thesis → Article <span
+                        class="badge">Beta</span></div>
+            </div>
+            <div class="nav-section">
+                <div class="nav-label">AI Assistant</div>
+                <div class="nav-item" onclick="showPanel('chat')"><span class="icon">💬</span> Research Chat</div>
+            </div>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-card" onclick="handleLogout()">
+                <div class="avatar" id="user-avatar">RA</div>
+                <div class="user-info">
+                    <div class="user-name" id="user-name-display">Researcher</div>
+                    <div class="user-plan" id="user-plan-display">✦ Click to Logout</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main">
+        <!-- DASHBOARD -->
+        <div id="panel-home" class="panel active">
+            <div class="topbar">
+                <h1>Research Dashboard</h1>
+                <div class="topbar-actions"><button class="btn btn-primary" onclick="showPanel('chat')">+ New
+                        Chat</button></div>
+            </div>
+            <div class="content">
+                <div class="hero-banner">
+                    <h2>Welcome to ScholarAI ✦</h2>
+                    <p>Your AI-powered research companion. Format articles to journal standards, verify citations,
+                        generate literature reviews, and convert your thesis into a publication-ready manuscript.</p>
+                    <div class="hero-actions">
+                        <button class="btn btn-primary" onclick="showPanel('formatter')">📄 Format Article</button>
+                        <button class="btn btn-ghost" onclick="showPanel('thesis')">🎓 Convert Thesis</button>
+                        <button class="btn btn-ghost" onclick="showPanel('chat')">💬 Ask AI</button>
+                    </div>
+                </div>
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="stat-label">Articles Formatted</div>
+                        <div class="stat-value blue" id="stat-formatted">0</div>
+                        <div class="stat-sub">total</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Citations Verified</div>
+                        <div class="stat-value green" id="stat-citations">0</div>
+                        <div class="stat-sub">total</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Chat Messages</div>
+                        <div class="stat-value gold" id="stat-chats">0</div>
+                        <div class="stat-sub">total</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Reviews Generated</div>
+                        <div class="stat-value purple" id="stat-reviews">0</div>
+                        <div class="stat-sub">total</div>
+                    </div>
+                </div>
+                <div class="divider">Core Features</div>
+                <div class="feature-grid">
+                    <div class="feature-card highlight" onclick="showPanel('formatter')" style="animation-delay:0.05s">
+                        <div class="feature-icon fi-blue">📄</div>
+                        <h3>Article Formatter</h3>
+                        <p>Paste journal guidelines and auto-format your manuscript — citations, headings, word limits,
+                            and more.</p>
+                    </div>
+                    <div class="feature-card" onclick="showPanel('litreview')" style="animation-delay:0.1s">
+                        <div class="feature-icon fi-purple">📚</div>
+                        <h3>Literature Review</h3>
+                        <p>Add sources and generate a structured, synthesized literature review with proper citations.
+                        </p><span class="feature-tag tag-new">New</span>
+                    </div>
+                    <div class="feature-card" onclick="showPanel('journal')" style="animation-delay:0.15s">
+                        <div class="feature-icon fi-gold">🔍</div>
+                        <h3>Journal Finder</h3>
+                        <p>Search journals by topic and get matching journals with their scope, impact factor, and
+                            guidelines.</p>
+                    </div>
+                    <div class="feature-card" onclick="showPanel('citation')" style="animation-delay:0.2s">
+                        <div class="feature-icon fi-green">✅</div>
+                        <h3>Citation Verifier</h3>
+                        <p>Validate your reference list — detect wrong authors, missing fields, and formatting errors.
+                        </p>
+                    </div>
+                    <div class="feature-card" onclick="showPanel('thesis')" style="animation-delay:0.25s">
+                        <div class="feature-icon fi-orange">🎓</div>
+                        <h3>Thesis → Article</h3>
+                        <p>Transform your thesis into a journal article with condensed abstract and publication-ready
+                            structure.</p><span class="feature-tag tag-beta">Beta</span>
+                    </div>
+                    <div class="feature-card" onclick="showPanel('chat')" style="animation-delay:0.3s">
+                        <div class="feature-icon fi-red">💬</div>
+                        <h3>Research AI Chat</h3>
+                        <p>Context-aware AI for research methodology, statistics, peer review responses, and academic
+                            writing.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ARTICLE FORMATTER -->
+        <div id="panel-formatter" class="panel">
+            <div class="topbar">
+                <h1>Article Formatter</h1>
+                <div class="topbar-actions"><button class="btn btn-ghost" onclick="copyText('format-output')">📋
+                        Copy</button><button class="btn btn-primary" id="fmt-btn" onclick="runFormatter()">▶ Format
+                        Now</button></div>
+            </div>
+            <div class="formatter-wrap">
+                <div class="formatter-controls">
+                    <div class="divider">Format Settings</div>
+                    <div class="control-grid">
+                        <div class="control-item"><label>Citation Style</label><select id="fmt-citation">
+                                <option>APA 7th Edition</option>
+                                <option>Vancouver</option>
+                                <option>Harvard</option>
+                                <option>MLA 9th</option>
+                                <option>Chicago 17th</option>
+                                <option>IEEE</option>
+                                <option>AMA</option>
+                            </select></div>
+                        <div class="control-item"><label>Article Type</label><select id="fmt-type">
+                                <option>Original Research</option>
+                                <option>Review Article</option>
+                                <option>Case Report</option>
+                                <option>Short Communication</option>
+                                <option>Systematic Review</option>
+                                <option>Letter to Editor</option>
+                            </select></div>
+                        <div class="control-item"><label>Word Limit</label><select id="fmt-wordlimit">
+                                <option>3,000 words</option>
+                                <option>4,000 words</option>
+                                <option>5,000 words</option>
+                                <option>6,000 words</option>
+                                <option>8,000 words</option>
+                                <option>No limit</option>
+                            </select></div>
+                        <div class="control-item"><label>Target Journal</label><input type="text" id="fmt-journal"
+                                placeholder="e.g. PLOS ONE, Lancet..."></div>
+                        <div class="control-item"><label>Heading Style</label><select id="fmt-heading">
+                                <option>IMRAD</option>
+                                <option>Custom Journal Sections</option>
+                                <option>Narrative Review</option>
+                            </select></div>
+                        <div class="control-item"><label>Abstract Type</label><select id="fmt-abstract">
+                                <option>Structured</option>
+                                <option>Unstructured paragraph</option>
+                                <option>No abstract</option>
+                            </select></div>
+                    </div>
+                </div>
+                <div style="font-size:0.78rem;color:var(--text3);flex-shrink:0;">💡 Paste your article OR journal
+                    guidelines — AI will auto-detect and apply the appropriate formatting.</div>
+                <div class="formatter-layout">
+                    <div class="panel-box">
+                        <div class="panel-header">
+                            <div class="dot" style="background:var(--warn)"></div>Input — Paste manuscript or journal
+                            guidelines
+                        </div>
+                        <div class="panel-body"><textarea id="format-input"
+                                placeholder="Paste your article text here..."></textarea></div>
+                        <div class="panel-footer"><span class="word-count" id="fmt-wc">0 words</span></div>
+                    </div>
+                    <div class="panel-box">
+                        <div class="panel-header">
+                            <div class="dot" style="background:var(--success)"></div>Output — Formatted manuscript<span
+                                id="fmt-status"
+                                style="margin-left:auto;font-size:0.75rem;color:var(--text3);">Ready</span>
+                        </div>
+                        <div id="fmt-loading" style="display:none;padding:3px 18px;flex-shrink:0;">
+                            <div class="loading-bar"></div>
+                        </div>
+                        <div class="panel-body"><textarea id="format-output"
+                                placeholder="Formatted article will appear here..." readonly></textarea></div>
+                        <div class="panel-footer"><button class="btn btn-ghost" style="font-size:0.75rem;"
+                                onclick="copyText('format-output')">📋 Copy</button></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LITERATURE REVIEW -->
+        <div id="panel-litreview" class="panel">
+            <div class="topbar">
+                <h1>Literature Review Generator</h1>
+                <div class="topbar-actions"><button class="btn btn-ghost" onclick="copyTextarea('litreview-output')">📋
+                        Copy</button><button class="btn btn-primary" id="litreview-btn" onclick="generateLitReview()">📝
+                        Generate Review</button></div>
+            </div>
+            <div class="litreview-wrap">
+                <div class="litreview-left">
+                    <div class="panel-header">📚 Sources <span id="source-count"
+                            style="margin-left:auto;font-size:0.72rem;color:var(--text3);">0 added</span></div>
+                    <div class="source-list" id="source-list">
+                        <div style="text-align:center;padding:24px;color:var(--text3);font-size:0.8rem;">Add sources
+                            below to get started</div>
+                    </div>
+                    <div class="add-source-area"><input type="text" id="source-input"
+                            placeholder="Paste title, DOI, or citation..."
+                            onkeydown="if(event.key==='Enter')addSource()"><button class="btn btn-primary"
+                            style="font-size:0.78rem;" onclick="addSource()">+ Add Source</button></div>
+                </div>
+                <div class="litreview-right">
+                    <div class="panel-header">✍ Generated Literature Review<div id="litreview-loading"
+                            style="display:none;margin-left:10px;">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                    <div class="panel-body" style="padding:0;"><textarea id="litreview-output"
+                            placeholder="Generated literature review will appear here..." readonly
+                            style="font-family:'DM Sans',sans-serif;font-size:0.875rem;line-height:1.8;padding:20px;"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- JOURNAL FINDER -->
+        <div id="panel-journal" class="panel">
+            <div class="topbar">
+                <h1>Journal Finder</h1>
+                <div class="topbar-actions"><button class="btn btn-primary" id="journal-btn" onclick="findJournals()">🔍
+                        Search Journals</button></div>
+            </div>
+            <div class="journal-wrap">
+                <div class="journal-search-bar">
+                    <input type="text" id="journal-topic" placeholder="Describe your research topic..."
+                        onkeydown="if(event.key==='Enter')findJournals()">
+                    <select id="journal-if" style="width:170px;">
+                        <option value="">Any Impact Factor</option>
+                        <option value="2">IF &gt; 2</option>
+                        <option value="5">IF &gt; 5</option>
+                        <option value="10">IF &gt; 10</option>
+                    </select>
+                    <select id="journal-oa" style="width:150px;">
+                        <option value="">All Types</option>
+                        <option value="open access">Open Access</option>
+                        <option value="subscription">Subscription</option>
+                    </select>
+                </div>
+                <div id="journal-loading" style="display:none;margin-bottom:12px;">
+                    <div class="loading-bar"></div>
+                </div>
+                <div id="journal-grid" class="journal-grid">
+                    <div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text3);font-size:0.9rem;">
+                        Enter your research topic above and click Search to find matching journals.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CITATION VERIFIER -->
+        <div id="panel-citation" class="panel">
+            <div class="topbar">
+                <h1>Citation Verifier</h1>
+                <div class="topbar-actions">
+                    <div id="cite-loading" style="display:none;">
+                        <div class="spinner"></div>
+                    </div><button class="btn btn-primary" id="cite-btn" onclick="verifyCitations()">✅ Verify
+                        All</button>
+                </div>
+            </div>
+            <div style="display:flex;flex-direction:column;flex:1;min-height:0;">
+                <div class="citation-input-area">
+                    <div style="font-size:0.82rem;color:var(--text2);margin-bottom:8px;">Paste your reference list below
+                        — one reference per line or as a full bibliography</div>
+                    <textarea id="citation-input" placeholder="Paste references here..."></textarea>
+                    <div style="display:flex;gap:10px;margin-top:10px;align-items:center;">
+                        <select id="cite-style" style="width:210px;">
+                            <option>APA 7th Edition</option>
+                            <option>Vancouver</option>
+                            <option>Harvard</option>
+                            <option>MLA 9th</option>
+                            <option>Chicago 17th</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="citation-results" id="citation-results">
+                    <div style="text-align:center;padding:40px;color:var(--text3);font-size:0.85rem;">Paste your
+                        references above and click Verify to check each citation.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- THESIS CONVERTER -->
+        <div id="panel-thesis" class="panel">
+            <div class="topbar">
+                <h1>Thesis → Article Converter</h1>
+                <div class="topbar-actions"><button class="btn btn-ghost" id="thesis-copy-btn"
+                        onclick="copyThesisOutput()" style="display:none;">📋 Copy</button><button class="btn btn-gold"
+                        id="thesis-btn" onclick="convertThesis()">🎓 Convert Now</button></div>
+            </div>
+            <div class="thesis-wrap">
+                <div class="steps-row">
+                    <div class="step active" id="step-1"><span class="step-num">1</span>Input</div>
+                    <div class="step" id="step-2"><span class="step-num">2</span>Type</div>
+                    <div class="step" id="step-3"><span class="step-num">3</span>Journal</div>
+                    <div class="step" id="step-4"><span class="step-num">4</span>Output</div>
+                </div>
+                <div class="panel-box" style="flex-shrink:0;">
+                    <div class="panel-header">📄 Paste Thesis Content</div>
+                    <div class="panel-body" style="max-height:160px;"><textarea id="thesis-input"
+                            placeholder="Paste your thesis chapter(s) here..."></textarea></div>
+                    <div class="panel-footer"><span class="word-count" id="thesis-wc">0 words</span><select
+                            id="thesis-citation" style="width:200px;margin-left:auto;">
+                            <option>APA 7th Edition</option>
+                            <option>Vancouver</option>
+                            <option>Harvard</option>
+                        </select></div>
+                </div>
+                <div>
+                    <div class="divider">Conversion Type</div>
+                    <div class="options-grid" id="thesis-options">
+                        <div class="option-card selected" onclick="selectThesisOption(this)">
+                            <h4>📖 Full Chapter → Article</h4>
+                            <p>Complete journal article with abstract, IMRAD structure, and references.</p>
+                        </div>
+                        <div class="option-card" onclick="selectThesisOption(this)">
+                            <h4>🔬 Results Only</h4>
+                            <p>Extract results and discussion for a short communication.</p>
+                        </div>
+                        <div class="option-card" onclick="selectThesisOption(this)">
+                            <h4>📊 Multiple Articles Plan</h4>
+                            <p>Strategic plan for splitting thesis into multiple publications.</p>
+                        </div>
+                        <div class="option-card" onclick="selectThesisOption(this)">
+                            <h4>📝 Abstract Only</h4>
+                            <p>Generate a structured abstract from your thesis content.</p>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="divider">Target Journal (Optional)</div><input type="text" id="thesis-journal"
+                        placeholder="e.g. PLOS ONE, BMJ, Lancet...">
+                </div>
+                <div id="thesis-progress"
+                    style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;flex-shrink:0;">
+                    <div style="font-size:0.8rem;font-weight:500;margin-bottom:10px;" id="thesis-progress-text">
+                        Processing...</div>
+                    <div class="loading-bar"></div>
+                </div>
+                <div id="thesis-output"
+                    style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px;flex-shrink:0;">
+                    <div class="divider">Converted Article</div>
+                    <div id="thesis-output-text"
+                        style="font-size:0.875rem;line-height:1.8;color:var(--text);white-space:pre-wrap;font-family:'DM Sans',sans-serif;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RESEARCH CHAT -->
+        <div id="panel-chat" class="panel">
+            <div class="topbar">
+                <h1>Research AI Chat</h1>
+                <div class="topbar-actions"><button class="btn btn-ghost" onclick="clearChat()">🗑 Clear</button></div>
+            </div>
+            <div class="chat-chips">
+                <span class="chip" onclick="sendChip(this)">Help me write a discussion section</span>
+                <span class="chip" onclick="sendChip(this)">What statistical test should I use?</span>
+                <span class="chip" onclick="sendChip(this)">Improve this abstract</span>
+                <span class="chip" onclick="sendChip(this)">Respond to reviewer comments</span>
+                <span class="chip" onclick="sendChip(this)">Explain PRISMA guidelines</span>
+                <span class="chip" onclick="sendChip(this)">How do I choose a journal?</span>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <div class="msg">
+                    <div class="msg-avatar ai">AI</div>
+                    <div class="msg-bubble">Hello! I'm your ScholarAI research assistant. I can help with:<br><br>✦
+                        Writing and structuring academic papers<br>✦ Statistical methods and research design<br>✦
+                        Responding to peer reviewer comments<br>✦ Literature review and synthesis<br>✦ Citation
+                        formatting<br>✦ Journal selection and submission strategy<br><br>What are you working on today?
+                    </div>
+                </div>
+            </div>
+            <div class="chat-input-bar">
+                <div class="chat-input-wrap"><textarea id="chat-input" placeholder="Ask anything about your research..."
+                        onkeydown="handleChatKey(event)" rows="1"></textarea></div>
+                <button class="btn btn-primary" id="chat-send-btn" onclick="sendChat()"
+                    style="height:48px;width:48px;padding:0;font-size:1.1rem;border-radius:10px;flex-shrink:0;">➤</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="./app.js"></script>
+</body>
+
+</html>

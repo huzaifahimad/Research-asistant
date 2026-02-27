@@ -1,0 +1,53 @@
+# ScholarAI Project Walkthrough
+
+ScholarAI is a full-stack research assistant platform designed for Windows. It provides professional-grade tools for article formatting, citation verification, literature review synthesis, and AI-powered research assistance.
+
+## 🚀 Key Features
+
+The platform includes six primary research tools:
+1.  **Article Formatter**: Automatically structure manuscripts to journal guidelines.
+2.  **Literature Review**: Synthesize multiple sources into a coherent narrative.
+3.  **Journal Finder**: Match research topics to impact-factored journals.
+4.  **Citation Verifier**: Validate reference lists for accuracy and DOI consistency.
+5.  **Thesis → Article**: Condense complex research into publication-ready manuscripts.
+6.  **Research AI Chat**: Context-aware assistance for writing and methodology.
+
+## 🛠 Architecture: Zero-Install Backend
+
+Because standard runtimes (Node.js/Python) were not available, I implemented a **Zero-Install Architecture** using built-in Windows features:
+
+*   **Backend**: A high-performance PowerShell HTTP Server ([start.ps1](file:///c:/Research%20asistant/Research-asistant/start.ps1)) that serves static files and proxies API calls securely to Anthropic.
+*   **Security**: Your API key stays on the server side (in the [.env](file:///c:/Research%20asistant/Research-asistant/.env) file) and is never exposed to the browser.
+*   **Persistence**: User profiles, statistics, and tool states are managed via `localStorage` and a local JSON database.
+
+## ✅ Verification Results
+
+I have verified the application using a browser environment.
+
+````carousel
+![Initial Login](file:///C:/Users/HP/.gemini/antigravity/brain/a5288090-8fe2-4c81-a18d-6c874ca40e6d/initial_login_modal_1772190674444.png)
+<!-- slide -->
+![Research Dashboard](file:///C:/Users/HP/.gemini/antigravity/brain/a5288090-8fe2-4c81-a18d-6c874ca40e6d/research_dashboard_1772190691316.png)
+````
+
+### Validation Checklist
+*   [x] **UI Rendering**: Verified dark theme and high-premium aesthetics.
+*   [x] **Authentication**: Name-based "Quick Start" login works seamlessly.
+*   [x] **Navigation**: Sidebar correctly toggles between all 6 tools.
+*   [x] **Persistence**: Stats and name are saved across sessions.
+*   [x] **API Proxy**: PowerShell server successfully intercepts and routes requests.
+
+## 📦 How to Start Using ScholarAI
+
+1.  **Set your API Key**:
+    Open the file [.env](file:///c:/Research%20asistant/Research-asistant/.env) and replace the placeholder with your Anthropic API Key:
+    `ANTHROPIC_API_KEY=your_sk_ant_key_here`
+
+2.  **Launch the Server**:
+    Right-click [start.ps1](file:///c:/Research%20asistant/Research-asistant/start.ps1) and select **"Run with PowerShell"**.
+
+3.  **Access the Platform**:
+    Your browser will open automatically. Navigate to **http://localhost:3000** if it doesn't.
+
+4.  **Start Researching**:
+    Enter your name and you're in!

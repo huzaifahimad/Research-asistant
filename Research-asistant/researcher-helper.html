@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScholarAI — Research Assistant Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0a0c10;--bg2:#111318;--bg3:#1a1d24;
+    --border:#252830;--border2:#2e3240;
+    --accent:#4f8ef7;--accent2:#7c5cbf;--gold:#d4a843;
+    --text:#e8eaf0;--text2:#8b90a0;--text3:#5a5f70;
+    --success:#3db88a;--warn:#e07b3a;--danger:#e05555;
+    --glow:rgba(79,142,247,0.15);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:260px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100;}
+  .logo{padding:24px 20px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+  .logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .logo-text{font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;}
+  .logo-sub{font-size:0.65rem;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;}
+  .nav{padding:16px 10px;flex:1;overflow-y:auto;}
+  .nav-section{margin-bottom:24px;}
+  .nav-label{font-size:0.65rem;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;padding:0 10px;margin-bottom:6px;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:0.875rem;color:var(--text2);transition:all 0.18s;margin-bottom:2px;border:1px solid transparent;}
+  .nav-item:hover{background:var(--bg3);color:var(--text);}
+  .nav-item.active{background:var(--glow);color:var(--accent);border-color:rgba(79,142,247,0.25);}
+  .nav-item .icon{font-size:1rem;width:20px;text-align:center;}
+  .badge{margin-left:auto;font-size:0.65rem;background:var(--accent);color:#fff;border-radius:10px;padding:1px 7px;}
+  .badge.new{background:var(--success);}
+  .sidebar-footer{padding:16px;border-top:1px solid var(--border);}
+  .user-card{display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;background:var(--bg3);cursor:pointer;}
+  .avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:600;}
+  .user-info{flex:1;}
+  .user-name{font-size:0.8rem;font-weight:500;}
+  .user-plan{font-size:0.65rem;color:var(--gold);}
+
+  .main{margin-left:260px;min-height:100vh;display:flex;flex-direction:column;}
+  .topbar{padding:16px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;background:var(--bg);position:sticky;top:0;z-index:50;}
+  .topbar h1{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:600;flex:1;}
+  .topbar-actions{display:flex;gap:10px;align-items:center;}
+  .btn{padding:8px 16px;border-radius:8px;border:none;font-family:'DM Sans',sans-serif;font-size:0.8rem;font-weight:500;cursor:pointer;transition:all 0.18s;}
+  .btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2);}
+  .btn-ghost:hover{background:var(--bg3);color:var(--text);}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover{background:#3a7de8;box-shadow:0 0 20px rgba(79,142,247,0.3);}
+  .btn-primary:disabled{opacity:0.5;cursor:not-allowed;}
+  .btn-gold{background:var(--gold);color:#0a0c10;font-weight:600;}
+  .btn-gold:disabled{opacity:0.5;cursor:not-allowed;}
+  .content{padding:28px;flex:1;overflow-y:auto;}
+
+  .hero-banner{background:linear-gradient(135deg,rgba(79,142,247,0.12),rgba(124,92,191,0.12));border:1px solid rgba(79,142,247,0.2);border-radius:16px;padding:32px 36px;margin-bottom:28px;position:relative;overflow:hidden;}
+  .hero-banner::before{content:'';position:absolute;right:-60px;top:-60px;width:240px;height:240px;background:radial-gradient(circle,rgba(79,142,247,0.15),transparent 70%);border-radius:50%;}
+  .hero-banner h2{font-family:'Playfair Display',serif;font-size:1.8rem;margin-bottom:8px;}
+  .hero-banner p{color:var(--text2);font-size:0.9rem;max-width:500px;line-height:1.6;margin-bottom:20px;}
+  .hero-actions{display:flex;gap:10px;flex-wrap:wrap;}
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;}
+  .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;}
+  .stat-label{font-size:0.75rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;}
+  .stat-value{font-size:1.8rem;font-weight:600;font-family:'Playfair Display',serif;}
+  .stat-value.blue{color:var(--accent)}.stat-value.green{color:var(--success)}.stat-value.gold{color:var(--gold)}.stat-value.purple{color:var(--accent2)}
+  .stat-sub{font-size:0.72rem;color:var(--text3);margin-top:4px;}
+  .feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .feature-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px;cursor:pointer;transition:all 0.22s;position:relative;overflow:hidden;animation:fadeUp 0.4s ease both;}
+  .feature-card:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,0.3);}
+  .feature-card.highlight{border-color:rgba(79,142,247,0.35);}
+  .feature-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin-bottom:14px;}
+  .fi-blue{background:rgba(79,142,247,0.15)}.fi-purple{background:rgba(124,92,191,0.15)}.fi-gold{background:rgba(212,168,67,0.15)}.fi-green{background:rgba(61,184,138,0.15)}.fi-red{background:rgba(224,85,85,0.15)}.fi-orange{background:rgba(224,123,58,0.15)}
+  .feature-card h3{font-size:0.95rem;font-weight:600;margin-bottom:6px;}
+  .feature-card p{font-size:0.8rem;color:var(--text2);line-height:1.5;}
+  .feature-tag{position:absolute;top:14px;right:14px;font-size:0.6rem;padding:3px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;}
+  .tag-new{background:rgba(61,184,138,0.2);color:var(--success)}.tag-beta{background:rgba(212,168,67,0.2);color:var(--gold)}
+  .divider{font-size:0.72rem;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+
+  .panel{display:none;height:calc(100vh - 65px);flex-direction:column;overflow:hidden;}
+  .panel.active{display:flex;}
+  #panel-home.active{display:block;height:auto;overflow:visible;}
+
+  .panel-box{background:var(--bg2);border:1px solid var(--border);border-radius:14px;display:flex;flex-direction:column;overflow:hidden;}
+  .panel-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;font-size:0.85rem;font-weight:500;flex-shrink:0;}
+  .panel-header .dot{width:8px;height:8px;border-radius:50%;}
+  .panel-body{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;}
+  textarea{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:'DM Mono',monospace;font-size:0.8rem;padding:16px 18px;resize:none;line-height:1.7;}
+  textarea::placeholder{color:var(--text3);}
+  .panel-footer{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-shrink:0;}
+  select,input[type="text"]{width:100%;padding:8px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.83rem;outline:none;transition:border-color 0.18s;}
+  select:focus,input:focus{border-color:var(--accent);}
+  select option{background:var(--bg3);}
+
+  /* FORMATTER */
+  .formatter-wrap{flex:1;display:flex;flex-direction:column;padding:16px 20px;gap:14px;overflow-y:auto;min-height:0;}
+  .formatter-controls{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px;flex-shrink:0;}
+  .control-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px;}
+  .control-item label{font-size:0.72rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:5px;}
+  .formatter-layout{display:grid;grid-template-columns:1fr 1fr;gap:16px;min-height:280px;flex-shrink:0;}
+
+  /* CHAT */
+  .chat-chips{display:flex;gap:8px;flex-wrap:wrap;padding:12px 20px;flex-shrink:0;border-bottom:1px solid var(--border);}
+  .chip{padding:5px 12px;border-radius:20px;font-size:0.75rem;cursor:pointer;background:var(--bg3);border:1px solid var(--border2);color:var(--text2);transition:all 0.15s;}
+  .chip:hover{border-color:var(--accent);color:var(--accent);}
+  .chat-messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px;}
+  .msg{display:flex;gap:12px;max-width:85%;animation:fadeUp 0.3s ease;}
+  .msg.user{align-self:flex-end;flex-direction:row-reverse;}
+  .msg-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;flex-shrink:0;margin-top:2px;}
+  .msg-avatar.ai{background:linear-gradient(135deg,var(--accent),var(--accent2));}
+  .msg-avatar.user{background:var(--bg3);border:1px solid var(--border2);}
+  .msg-bubble{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 16px;font-size:0.875rem;line-height:1.7;color:var(--text);}
+  .msg.user .msg-bubble{background:rgba(79,142,247,0.12);border-color:rgba(79,142,247,0.25);}
+  .chat-input-bar{padding:16px 20px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:flex-end;flex-shrink:0;}
+  .chat-input-wrap{flex:1;background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:10px 14px;}
+  .chat-input-wrap textarea{padding:0;font-family:'DM Sans',sans-serif;font-size:0.875rem;min-height:44px;max-height:140px;overflow-y:auto;}
+
+  .typing{display:flex;gap:5px;align-items:center;padding:4px 0;}
+  .typing span{width:7px;height:7px;border-radius:50%;background:var(--text3);animation:bounce 1.2s infinite;}
+  .typing span:nth-child(2){animation-delay:0.2s}.typing span:nth-child(3){animation-delay:0.4s}
+  @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+
+  /* CITATION */
+  .citation-input-area{padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0;}
+  .citation-input-area textarea{background:var(--bg2);border:1px solid var(--border2);border-radius:10px;height:120px;padding:12px;font-size:0.8rem;width:100%;display:block;resize:none;color:var(--text);font-family:'DM Mono',monospace;outline:none;}
+  .citation-results{flex:1;overflow-y:auto;padding:14px 20px;display:flex;flex-direction:column;gap:10px;}
+  .citation-item{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+  .citation-header{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+  .citation-status{font-size:0.7rem;font-weight:600;padding:2px 8px;border-radius:20px;text-transform:uppercase;}
+  .cs-valid{background:rgba(61,184,138,0.2);color:var(--success)}.cs-warn{background:rgba(212,168,67,0.2);color:var(--gold)}.cs-invalid{background:rgba(224,85,85,0.2);color:var(--danger)}
+  .citation-text{font-size:0.8rem;font-family:'DM Mono',monospace;color:var(--text2);line-height:1.6;margin-bottom:6px;}
+  .citation-note{font-size:0.75rem;color:var(--text3);line-height:1.5;}
+
+  /* JOURNAL */
+  .journal-wrap{flex:1;overflow-y:auto;padding:20px;}
+  .journal-search-bar{display:flex;gap:10px;margin-bottom:16px;}
+  .journal-search-bar input{flex:1;padding:10px 16px;font-size:0.9rem;}
+  .journal-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+  .journal-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;transition:all 0.18s;cursor:default;}
+  .journal-top{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px;}
+  .journal-abbr{font-size:0.65rem;font-weight:700;letter-spacing:0.05em;background:rgba(79,142,247,0.15);color:var(--accent);padding:4px 8px;border-radius:6px;white-space:nowrap;margin-top:2px;}
+  .journal-name{font-size:0.9rem;font-weight:600;line-height:1.3;}
+  .journal-publisher{font-size:0.75rem;color:var(--text3);margin-top:2px;}
+  .journal-meta{display:flex;gap:12px;margin-top:10px;flex-wrap:wrap;}
+  .jm{font-size:0.72rem;}
+  .jm-label{color:var(--text3)}.jm-val{color:var(--text);font-weight:500;}
+  .if-badge{padding:2px 8px;border-radius:6px;font-size:0.7rem;font-weight:600;background:rgba(61,184,138,0.15);color:var(--success);}
+  .journal-guidelines{font-size:0.8rem;color:var(--text2);line-height:1.6;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:none;}
+  .journal-card.expanded .journal-guidelines{display:block;}
+
+  /* THESIS */
+  .thesis-wrap{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:14px;}
+  .steps-row{display:flex;gap:0;flex-shrink:0;}
+  .step{flex:1;text-align:center;padding:12px;border-bottom:2px solid var(--border);font-size:0.75rem;color:var(--text3);transition:all 0.18s;}
+  .step.done{border-color:var(--success);color:var(--success)}.step.active{border-color:var(--accent);color:var(--accent);}
+  .step-num{font-size:1rem;font-weight:700;display:block;margin-bottom:2px;}
+  .options-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;flex-shrink:0;}
+  .option-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;cursor:pointer;transition:all 0.18s;}
+  .option-card:hover{border-color:var(--accent)}.option-card.selected{border-color:var(--accent);background:rgba(79,142,247,0.08);}
+  .option-card h4{font-size:0.85rem;margin-bottom:4px;}.option-card p{font-size:0.75rem;color:var(--text3);}
+
+  /* LIT REVIEW */
+  .litreview-wrap{flex:1;display:flex;min-height:0;}
+  .litreview-left{width:280px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;}
+  .litreview-right{flex:1;display:flex;flex-direction:column;min-width:0;}
+  .source-list{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;}
+  .source-item{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;transition:all 0.15s;}
+  .source-item:hover{border-color:var(--border2);}
+  .source-title{font-size:0.8rem;font-weight:500;margin-bottom:3px;line-height:1.4;}
+  .source-meta{font-size:0.7rem;color:var(--text3);}
+  .rel-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:6px;}
+  .rel-fill{height:100%;border-radius:2px;}
+  .add-source-area{padding:10px;border-top:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;gap:8px;}
+  .add-source-area input{padding:8px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.8rem;outline:none;width:100%;}
+  .add-source-area input::placeholder{color:var(--text3);}
+
+  .loading-bar{height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent));background-size:200% 100%;animation:loading 1.5s linear infinite;border-radius:2px;}
+  @keyframes loading{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.6s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:12px 18px;font-size:0.85rem;z-index:999;animation:slideIn 0.3s ease;display:flex;align-items:center;gap:10px;max-width:340px;}
+  @keyframes slideIn{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+  ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+  .word-count{font-size:0.72rem;color:var(--text3);}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">🔬</div>
+    <div>
+      <div class="logo-text">ScholarAI</div>
+      <div class="logo-sub">Research Platform</div>
+    </div>
+  </div>
+  <nav class="nav">
+    <div class="nav-section">
+      <div class="nav-label">Overview</div>
+      <div class="nav-item active" onclick="showPanel('home')"><span class="icon">⊞</span> Dashboard</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Tools</div>
+      <div class="nav-item" onclick="showPanel('formatter')"><span class="icon">📄</span> Article Formatter</div>
+      <div class="nav-item" onclick="showPanel('litreview')"><span class="icon">📚</span> Literature Review</div>
+      <div class="nav-item" onclick="showPanel('journal')"><span class="icon">🔍</span> Journal Finder <span class="badge new">New</span></div>
+      <div class="nav-item" onclick="showPanel('citation')"><span class="icon">✅</span> Citation Verifier</div>
+      <div class="nav-item" onclick="showPanel('thesis')"><span class="icon">🎓</span> Thesis → Article <span class="badge">Beta</span></div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">AI Assistant</div>
+      <div class="nav-item" onclick="showPanel('chat')"><span class="icon">💬</span> Research Chat</div>
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-card">
+      <div class="avatar">RA</div>
+      <div class="user-info">
+        <div class="user-name">Researcher</div>
+        <div class="user-plan">✦ Pro Plan</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- DASHBOARD -->
+  <div id="panel-home" class="panel active">
+    <div class="topbar"><h1>Research Dashboard</h1><div class="topbar-actions"><button class="btn btn-primary" onclick="showPanel('chat')">+ New Chat</button></div></div>
+    <div class="content">
+      <div class="hero-banner">
+        <h2>Welcome to ScholarAI ✦</h2>
+        <p>Your AI-powered research companion. Format articles to journal standards, verify citations, generate literature reviews, and convert your thesis into a publication-ready manuscript.</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" onclick="showPanel('formatter')">📄 Format Article</button>
+          <button class="btn btn-ghost" onclick="showPanel('thesis')">🎓 Convert Thesis</button>
+          <button class="btn btn-ghost" onclick="showPanel('chat')">💬 Ask AI</button>
+        </div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-label">Articles Formatted</div><div class="stat-value blue" id="stat-formatted">0</div><div class="stat-sub">this session</div></div>
+        <div class="stat-card"><div class="stat-label">Citations Verified</div><div class="stat-value green" id="stat-citations">0</div><div class="stat-sub">this session</div></div>
+        <div class="stat-card"><div class="stat-label">Chat Messages</div><div class="stat-value gold" id="stat-chats">0</div><div class="stat-sub">this session</div></div>
+        <div class="stat-card"><div class="stat-label">Reviews Generated</div><div class="stat-value purple" id="stat-reviews">0</div><div class="stat-sub">this session</div></div>
+      </div>
+      <div class="divider">Core Features</div>
+      <div class="feature-grid">
+        <div class="feature-card highlight" onclick="showPanel('formatter')" style="animation-delay:0.05s"><div class="feature-icon fi-blue">📄</div><h3>Article Formatter</h3><p>Paste journal guidelines and auto-format your manuscript — citations, headings, word limits, and more.</p></div>
+        <div class="feature-card" onclick="showPanel('litreview')" style="animation-delay:0.1s"><div class="feature-icon fi-purple">📚</div><h3>Literature Review</h3><p>Add sources and generate a structured, synthesized literature review with proper citations.</p><span class="feature-tag tag-new">New</span></div>
+        <div class="feature-card" onclick="showPanel('journal')" style="animation-delay:0.15s"><div class="feature-icon fi-gold">🔍</div><h3>Journal Finder</h3><p>Search journals by topic and get matching journals with their scope, impact factor, and guidelines.</p></div>
+        <div class="feature-card" onclick="showPanel('citation')" style="animation-delay:0.2s"><div class="feature-icon fi-green">✅</div><h3>Citation Verifier</h3><p>Validate your reference list — detect wrong authors, missing fields, and formatting errors.</p></div>
+        <div class="feature-card" onclick="showPanel('thesis')" style="animation-delay:0.25s"><div class="feature-icon fi-orange">🎓</div><h3>Thesis → Article</h3><p>Transform your thesis into a journal article with condensed abstract and publication-ready structure.</p><span class="feature-tag tag-beta">Beta</span></div>
+        <div class="feature-card" onclick="showPanel('chat')" style="animation-delay:0.3s"><div class="feature-icon fi-red">💬</div><h3>Research AI Chat</h3><p>Context-aware AI for research methodology, statistics, peer review responses, and academic writing.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARTICLE FORMATTER -->
+  <div id="panel-formatter" class="panel">
+    <div class="topbar">
+      <h1>Article Formatter</h1>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost" onclick="copyText('format-output')">📋 Copy</button>
+        <button class="btn btn-primary" id="fmt-btn" onclick="runFormatter()">▶ Format Now</button>
+      </div>
+    </div>
+    <div class="formatter-wrap">
+      <div class="formatter-controls">
+        <div class="divider">Format Settings</div>
+        <div class="control-grid">
+          <div class="control-item"><label>Citation Style</label>
+            <select id="fmt-citation"><option>APA 7th Edition</option><option>Vancouver</option><option>Harvard</option><option>MLA 9th</option><option>Chicago 17th</option><option>IEEE</option><option>AMA</option></select></div>
+          <div class="control-item"><label>Article Type</label>
+            <select id="fmt-type"><option>Original Research</option><option>Review Article</option><option>Case Report</option><option>Short Communication</option><option>Systematic Review</option><option>Letter to Editor</option></select></div>
+          <div class="control-item"><label>Word Limit</label>
+            <select id="fmt-wordlimit"><option>3,000 words</option><option>4,000 words</option><option>5,000 words</option><option>6,000 words</option><option>8,000 words</option><option>No limit</option></select></div>
+          <div class="control-item"><label>Target Journal</label><input type="text" id="fmt-journal" placeholder="e.g. PLOS ONE, Lancet..."></div>
+          <div class="control-item"><label>Heading Style</label>
+            <select id="fmt-heading"><option>IMRAD</option><option>Custom Journal Sections</option><option>Narrative Review</option></select></div>
+          <div class="control-item"><label>Abstract Type</label>
+            <select id="fmt-abstract"><option>Structured</option><option>Unstructured paragraph</option><option>No abstract</option></select></div>
+        </div>
+      </div>
+      <div style="font-size:0.78rem;color:var(--text3);flex-shrink:0;">💡 Paste your article OR journal guidelines — AI will auto-detect and apply the appropriate formatting.</div>
+      <div class="formatter-layout">
+        <div class="panel-box">
+          <div class="panel-header"><div class="dot" style="background:var(--warn)"></div>Input — Paste manuscript or journal guidelines</div>
+          <div class="panel-body">
+            <textarea id="format-input" placeholder="Paste your article text here...
+
+Or paste the full author guidelines from the journal website to auto-detect formatting requirements.
+
+Example journal guidelines:
+'Manuscripts should not exceed 4000 words. Use APA 7th edition. Structured abstract of 250 words maximum. Sections: Introduction, Methods, Results, Discussion...'"></textarea>
+          </div>
+          <div class="panel-footer">
+            <span class="word-count" id="fmt-wc">0 words</span>
+          </div>
+        </div>
+        <div class="panel-box">
+          <div class="panel-header"><div class="dot" style="background:var(--success)"></div>Output — Formatted manuscript
+            <span id="fmt-status" style="margin-left:auto;font-size:0.75rem;color:var(--text3);">Ready</span>
+          </div>
+          <div id="fmt-loading" style="display:none;padding:3px 18px;flex-shrink:0;"><div class="loading-bar"></div></div>
+          <div class="panel-body">
+            <textarea id="format-output" placeholder="Formatted article will appear here..." readonly></textarea>
+          </div>
+          <div class="panel-footer">
+            <button class="btn btn-ghost" style="font-size:0.75rem;" onclick="copyText('format-output')">📋 Copy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LITERATURE REVIEW -->
+  <div id="panel-litreview" class="panel">
+    <div class="topbar">
+      <h1>Literature Review Generator</h1>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost" onclick="copyTextarea('litreview-output')">📋 Copy</button>
+        <button class="btn btn-primary" id="litreview-btn" onclick="generateLitReview()">📝 Generate Review</button>
+      </div>
+    </div>
+    <div class="litreview-wrap">
+      <div class="litreview-left">
+        <div class="panel-header">📚 Sources <span id="source-count" style="margin-left:auto;font-size:0.72rem;color:var(--text3);">0 added</span></div>
+        <div class="source-list" id="source-list">
+          <div style="text-align:center;padding:24px;color:var(--text3);font-size:0.8rem;">Add sources below to get started</div>
+        </div>
+        <div class="add-source-area">
+          <input type="text" id="source-input" placeholder="Paste title, DOI, or citation..." onkeydown="if(event.key==='Enter')addSource()">
+          <button class="btn btn-primary" style="font-size:0.78rem;" onclick="addSource()">+ Add Source</button>
+        </div>
+      </div>
+      <div class="litreview-right">
+        <div class="panel-header">
+          ✍ Generated Literature Review
+          <div id="litreview-loading" style="display:none;margin-left:10px;"><div class="spinner"></div></div>
+        </div>
+        <div class="panel-body" style="padding:0;">
+          <textarea id="litreview-output" placeholder="Generated literature review will appear here...
+
+Add sources on the left, then click 'Generate Review' to create a structured, synthesized literature review with proper academic citations." readonly style="font-family:'DM Sans',sans-serif;font-size:0.875rem;line-height:1.8;padding:20px;"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JOURNAL FINDER -->
+  <div id="panel-journal" class="panel">
+    <div class="topbar">
+      <h1>Journal Finder</h1>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" id="journal-btn" onclick="findJournals()">🔍 Search Journals</button>
+      </div>
+    </div>
+    <div class="journal-wrap">
+      <div class="journal-search-bar">
+        <input type="text" id="journal-topic" placeholder="Describe your research topic... e.g. 'machine learning in clinical diagnosis'" onkeydown="if(event.key==='Enter')findJournals()">
+        <select id="journal-if" style="width:170px;">
+          <option value="">Any Impact Factor</option>
+          <option value="2">IF &gt; 2</option>
+          <option value="5">IF &gt; 5</option>
+          <option value="10">IF &gt; 10</option>
+        </select>
+        <select id="journal-oa" style="width:150px;">
+          <option value="">All Types</option>
+          <option value="open access">Open Access</option>
+          <option value="subscription">Subscription</option>
+        </select>
+      </div>
+      <div id="journal-loading" style="display:none;margin-bottom:12px;"><div class="loading-bar"></div></div>
+      <div id="journal-grid" class="journal-grid">
+        <div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text3);font-size:0.9rem;">Enter your research topic above and click Search to find matching journals with detailed guidelines.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CITATION VERIFIER -->
+  <div id="panel-citation" class="panel">
+    <div class="topbar">
+      <h1>Citation Verifier</h1>
+      <div class="topbar-actions">
+        <div id="cite-loading" style="display:none;"><div class="spinner"></div></div>
+        <button class="btn btn-primary" id="cite-btn" onclick="verifyCitations()">✅ Verify All</button>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;flex:1;min-height:0;">
+      <div class="citation-input-area">
+        <div style="font-size:0.82rem;color:var(--text2);margin-bottom:8px;">Paste your reference list below — one reference per line or as a full bibliography</div>
+        <textarea id="citation-input" placeholder="Paste references here...
+
+Zhang, Y., Liu, M., & Chen, K. (2023). Machine learning in clinical diagnosis. Nature Medicine, 29(4), 891-902.
+Patel, R., & Kim, J. (2022). Deep learning for radiology. Radiology, 305(1), 114-122.
+Williams et al. (2023). Ethical AI in healthcare. Lancet Digital Health, 5(2), e45-e52."></textarea>
+        <div style="display:flex;gap:10px;margin-top:10px;align-items:center;">
+          <select id="cite-style" style="width:210px;"><option>APA 7th Edition</option><option>Vancouver</option><option>Harvard</option><option>MLA 9th</option><option>Chicago 17th</option></select>
+        </div>
+      </div>
+      <div class="citation-results" id="citation-results">
+        <div style="text-align:center;padding:40px;color:var(--text3);font-size:0.85rem;">Paste your references above and click Verify to check each citation for accuracy and formatting issues.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- THESIS CONVERTER -->
+  <div id="panel-thesis" class="panel">
+    <div class="topbar">
+      <h1>Thesis → Article Converter</h1>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost" id="thesis-copy-btn" onclick="copyThesisOutput()" style="display:none;">📋 Copy</button>
+        <button class="btn btn-gold" id="thesis-btn" onclick="convertThesis()">🎓 Convert Now</button>
+      </div>
+    </div>
+    <div class="thesis-wrap">
+      <div class="steps-row">
+        <div class="step active" id="step-1"><span class="step-num">1</span>Input</div>
+        <div class="step" id="step-2"><span class="step-num">2</span>Type</div>
+        <div class="step" id="step-3"><span class="step-num">3</span>Journal</div>
+        <div class="step" id="step-4"><span class="step-num">4</span>Output</div>
+      </div>
+      <div class="panel-box" style="flex-shrink:0;">
+        <div class="panel-header">📄 Paste Thesis Content</div>
+        <div class="panel-body" style="max-height:160px;">
+          <textarea id="thesis-input" placeholder="Paste your thesis chapter(s) here — introduction, methods, results, discussion, or the full thesis. The AI will restructure and condense it into a journal article."></textarea>
+        </div>
+        <div class="panel-footer">
+          <span class="word-count" id="thesis-wc">0 words</span>
+          <select id="thesis-citation" style="width:200px;margin-left:auto;"><option>APA 7th Edition</option><option>Vancouver</option><option>Harvard</option></select>
+        </div>
+      </div>
+      <div>
+        <div class="divider">Conversion Type</div>
+        <div class="options-grid" id="thesis-options">
+          <div class="option-card selected" onclick="selectThesisOption(this)"><h4>📖 Full Chapter → Article</h4><p>Complete journal article with abstract, IMRAD structure, and references.</p></div>
+          <div class="option-card" onclick="selectThesisOption(this)"><h4>🔬 Results Only</h4><p>Extract results and discussion for a short communication.</p></div>
+          <div class="option-card" onclick="selectThesisOption(this)"><h4>📊 Multiple Articles Plan</h4><p>Strategic plan for splitting thesis into multiple publications.</p></div>
+          <div class="option-card" onclick="selectThesisOption(this)"><h4>📝 Abstract Only</h4><p>Generate a structured abstract from your thesis content.</p></div>
+        </div>
+      </div>
+      <div>
+        <div class="divider">Target Journal (Optional)</div>
+        <input type="text" id="thesis-journal" placeholder="e.g. PLOS ONE, BMJ, Lancet... leave blank for general format">
+      </div>
+      <div id="thesis-progress" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;flex-shrink:0;">
+        <div style="font-size:0.8rem;font-weight:500;margin-bottom:10px;" id="thesis-progress-text">Processing...</div>
+        <div class="loading-bar"></div>
+      </div>
+      <div id="thesis-output" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px;flex-shrink:0;">
+        <div class="divider">Converted Article</div>
+        <div id="thesis-output-text" style="font-size:0.875rem;line-height:1.8;color:var(--text);white-space:pre-wrap;font-family:'DM Sans',sans-serif;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESEARCH CHAT -->
+  <div id="panel-chat" class="panel">
+    <div class="topbar">
+      <h1>Research AI Chat</h1>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost" onclick="clearChat()">🗑 Clear</button>
+      </div>
+    </div>
+    <div class="chat-chips">
+      <span class="chip" onclick="sendChip(this)">Help me write a discussion section</span>
+      <span class="chip" onclick="sendChip(this)">What statistical test should I use?</span>
+      <span class="chip" onclick="sendChip(this)">Improve this abstract</span>
+      <span class="chip" onclick="sendChip(this)">Respond to reviewer comments</span>
+      <span class="chip" onclick="sendChip(this)">Explain PRISMA guidelines</span>
+      <span class="chip" onclick="sendChip(this)">How do I choose a journal?</span>
+    </div>
+    <div class="chat-messages" id="chat-messages">
+      <div class="msg">
+        <div class="msg-avatar ai">AI</div>
+        <div class="msg-bubble">Hello! I'm your ScholarAI research assistant powered by Claude. I can help with:<br><br>
+          ✦ Writing and structuring academic papers<br>
+          ✦ Statistical methods and research design<br>
+          ✦ Responding to peer reviewer comments<br>
+          ✦ Literature review and synthesis<br>
+          ✦ Citation formatting<br>
+          ✦ Journal selection and submission strategy<br><br>
+          What are you working on today?
+        </div>
+      </div>
+    </div>
+    <div class="chat-input-bar">
+      <div class="chat-input-wrap">
+        <textarea id="chat-input" placeholder="Ask anything about your research, writing, statistics, or journal submission..." onkeydown="handleChatKey(event)" rows="1"></textarea>
+      </div>
+      <button class="btn btn-primary" id="chat-send-btn" onclick="sendChat()" style="height:48px;width:48px;padding:0;font-size:1.1rem;border-radius:10px;flex-shrink:0;">➤</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const S = { chatHistory:[], sources:[], stats:{formatted:0,citations:0,chats:0,reviews:0} };
+
+// ── API ──
+async function callClaude(messages, system='', maxTokens=1500) {
+  const body = { model:'claude-sonnet-4-6', max_tokens:maxTokens, messages };
+  if (system) body.system = system;
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
+  });
+  const d = await r.json();
+  if (d.error) throw new Error(d.error.message);
+  return d.content[0].text;
+}
+
+// ── NAV ──
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(item=>{
+    if(item.getAttribute('onclick')?.includes("'"+id+"'")) item.classList.add('active');
+  });
+}
+
+// ── CHAT ──
+const CHAT_SYS = `You are ScholarAI, an expert AI research assistant specializing in academic writing, scientific methodology, statistics, and journal publishing. Help researchers write, format, and publish papers. Be specific, practical and use **bold** for key terms. Keep responses focused and useful.`;
+
+async function sendChat() {
+  const inp = document.getElementById('chat-input');
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value=''; inp.style.height='auto';
+  addMsg('user', text);
+  S.chatHistory.push({role:'user',content:text});
+  const btn = document.getElementById('chat-send-btn');
+  btn.disabled = true;
+  const typing = addTyping();
+  try {
+    const reply = await callClaude(S.chatHistory, CHAT_SYS, 1200);
+    typing.remove();
+    S.chatHistory.push({role:'assistant',content:reply});
+    addMsg('ai', mdToHtml(reply));
+    S.stats.chats++; updateStats();
+  } catch(e) {
+    typing.remove();
+    addMsg('ai','⚠ Connection error. Please try again.');
+  }
+  btn.disabled = false;
+}
+
+function mdToHtml(t) {
+  return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/\n/g,'<br>');
+}
+
+function addMsg(role, html) {
+  const el = document.createElement('div');
+  el.className = 'msg'+(role==='user'?' user':'');
+  el.innerHTML = `<div class="msg-avatar ${role==='ai'?'ai':'user'}">${role==='ai'?'AI':'U'}</div><div class="msg-bubble">${html}</div>`;
+  const msgs = document.getElementById('chat-messages');
+  msgs.appendChild(el);
+  msgs.scrollTop = msgs.scrollHeight;
+  return el;
+}
+
+function addTyping() {
+  const el = document.createElement('div');
+  el.className = 'msg';
+  el.innerHTML = `<div class="msg-avatar ai">AI</div><div class="msg-bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  const msgs = document.getElementById('chat-messages');
+  msgs.appendChild(el);
+  msgs.scrollTop = msgs.scrollHeight;
+  return el;
+}
+
+function handleChatKey(e) {
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();}
+  e.target.style.height='auto';
+  e.target.style.height=Math.min(e.target.scrollHeight,140)+'px';
+}
+
+function sendChip(el) {
+  document.getElementById('chat-input').value=el.textContent;
+  sendChat();
+}
+
+function clearChat() {
+  S.chatHistory=[];
+  document.getElementById('chat-messages').innerHTML=`<div class="msg"><div class="msg-avatar ai">AI</div><div class="msg-bubble">Chat cleared! What research question can I help you with?</div></div>`;
+}
+
+// ── FORMATTER ──
+document.getElementById('format-input').addEventListener('input',function(){
+  document.getElementById('fmt-wc').textContent=this.value.trim().split(/\s+/).filter(w=>w).length+' words';
+});
+
+async function runFormatter() {
+  const input = document.getElementById('format-input').value.trim();
+  if(!input){showToast('⚠ Please paste your article or journal guidelines first');return;}
+  const citation=document.getElementById('fmt-citation').value;
+  const type=document.getElementById('fmt-type').value;
+  const wordlimit=document.getElementById('fmt-wordlimit').value;
+  const journal=document.getElementById('fmt-journal').value;
+  const heading=document.getElementById('fmt-heading').value;
+  const abst=document.getElementById('fmt-abstract').value;
+
+  document.getElementById('fmt-loading').style.display='block';
+  document.getElementById('fmt-btn').disabled=true;
+  document.getElementById('fmt-status').textContent='Formatting...';
+  document.getElementById('fmt-status').style.color='var(--warn)';
+  document.getElementById('format-output').value='';
+
+  const prompt=`You are an expert academic manuscript formatter.
+
+The user has provided text which may be: (1) a manuscript to format, (2) journal author guidelines, or (3) both.
+
+Formatting requirements:
+- Citation style: ${citation}
+- Article type: ${type}
+- Word limit: ${wordlimit}
+- Target journal: ${journal||'not specified'}
+- Heading style: ${heading}
+- Abstract format: ${abst}
+
+User input:
+"""
+${input.substring(0,3500)}
+"""
+
+Instructions:
+- If guidelines were pasted, extract all rules and apply them to restructure any article content present
+- Reformat all citations to the specified style
+- Add proper section headings in the correct order
+- Structure the abstract correctly
+- At the end, add a section "⚠ FORMATTING NOTES:" listing any issues found (word count, missing sections, etc.)
+
+Output the complete formatted manuscript.`;
+
+  try {
+    const result = await callClaude([{role:'user',content:prompt}],'',2000);
+    document.getElementById('format-output').removeAttribute('readonly');
+    document.getElementById('format-output').value=result;
+    document.getElementById('fmt-status').textContent='✓ Formatted';
+    document.getElementById('fmt-status').style.color='var(--success)';
+    S.stats.formatted++; updateStats();
+    showToast('✓ Article formatted successfully!');
+  } catch(e) {
+    document.getElementById('fmt-status').textContent='Error';
+    document.getElementById('fmt-status').style.color='var(--danger)';
+    showToast('⚠ Error: '+e.message);
+  }
+  document.getElementById('fmt-loading').style.display='none';
+  document.getElementById('fmt-btn').disabled=false;
+}
+
+// ── CITATION VERIFIER ──
+async function verifyCitations() {
+  const input=document.getElementById('citation-input').value.trim();
+  if(!input){showToast('⚠ Please paste your reference list first');return;}
+  const style=document.getElementById('cite-style').value;
+  document.getElementById('cite-loading').style.display='flex';
+  document.getElementById('cite-btn').disabled=true;
+  document.getElementById('citation-results').innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);">Analyzing citations with AI...</div>';
+
+  const prompt=`You are an expert academic citation verifier. Analyze the following reference list using ${style} standards.
+
+References to verify:
+"""
+${input}
+"""
+
+For EACH reference, provide a JSON array where each object has:
+- "num": number (1, 2, 3...)
+- "text": the original citation text (verbatim)
+- "status": one of "valid", "warning", or "invalid"
+- "note": specific, actionable feedback about what is correct or what needs to be fixed
+
+Check every reference for:
+- Correct ${style} formatting
+- All required fields present (authors, year, title, journal/publisher, volume, issue, pages, DOI)
+- Proper capitalization and punctuation
+- "et al." usage rules
+- DOI format validity
+
+Be specific in your notes. Respond ONLY with a valid JSON array. No other text.`;
+
+  try {
+    const result = await callClaude([{role:'user',content:prompt}],'',2500);
+    const clean = result.replace(/```json|```/g,'').trim();
+    const citations = JSON.parse(clean);
+    const resultsEl = document.getElementById('citation-results');
+    resultsEl.innerHTML='';
+    let valid=0,warn=0,invalid=0;
+    citations.forEach(c=>{
+      const sc=c.status==='valid'?'cs-valid':c.status==='warning'?'cs-warn':'cs-invalid';
+      const si=c.status==='valid'?'✓ Verified':c.status==='warning'?'⚠ Minor Issue':'✗ Invalid';
+      const nc=c.status==='valid'?'var(--text3)':c.status==='warning'?'var(--gold)':'var(--danger)';
+      if(c.status==='valid')valid++;else if(c.status==='warning')warn++;else invalid++;
+      resultsEl.innerHTML+=`<div class="citation-item"><div class="citation-header"><span style="font-size:0.8rem;font-weight:600;">[${c.num}]</span><span class="citation-status ${sc}">${si}</span></div><div class="citation-text">${c.text}</div><div class="citation-note" style="color:${nc};">${c.note}</div></div>`;
+    });
+    S.stats.citations+=citations.length; updateStats();
+    showToast(`✓ ${valid} valid · ${warn} warnings · ${invalid} invalid`);
+  } catch(e) {
+    document.getElementById('citation-results').innerHTML='<div style="padding:20px;color:var(--danger);">⚠ Could not parse results. Please try again.</div>';
+    showToast('⚠ Error analyzing citations');
+  }
+  document.getElementById('cite-loading').style.display='none';
+  document.getElementById('cite-btn').disabled=false;
+}
+
+// ── JOURNAL FINDER ──
+async function findJournals() {
+  const topic=document.getElementById('journal-topic').value.trim();
+  if(!topic){showToast('⚠ Please describe your research topic');return;}
+  const ifFilter=document.getElementById('journal-if').value;
+  const oaFilter=document.getElementById('journal-oa').value;
+  document.getElementById('journal-loading').style.display='block';
+  document.getElementById('journal-btn').disabled=true;
+  document.getElementById('journal-grid').innerHTML='<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text3);">Finding matching journals...</div>';
+
+  const prompt=`You are an expert in academic publishing. Recommend journals for this research.
+
+Research topic: "${topic}"
+Impact factor preference: ${ifFilter?'minimum IF '+ifFilter:'any'}
+Access preference: ${oaFilter||'any'}
+
+Recommend exactly 6 journals as a JSON array. Each journal must have:
+- "abbr": abbreviation (max 8 chars, uppercase)
+- "name": full journal name
+- "publisher": publisher name
+- "if": impact factor as string like "3.7" or "58.7"
+- "scope": 1-sentence description of what the journal covers
+- "citation": citation style (e.g. "APA", "Vancouver", "IEEE")
+- "wordlimit": word limit (e.g. "4,000 words" or "No limit")
+- "review_time": average review time (e.g. "~28 days")
+- "indexing": main databases (e.g. "PubMed, Scopus, WoS")
+- "guideline": 2-3 sentences of key submission requirements
+- "fit": exactly why this journal fits the given research topic (1 sentence)
+
+Make recommendations that genuinely match the research topic. Mix high-impact and accessible options.
+Respond ONLY with valid JSON array.`;
+
+  try {
+    const result=await callClaude([{role:'user',content:prompt}],'',2000);
+    const clean=result.replace(/```json|```/g,'').trim();
+    const journals=JSON.parse(clean);
+    document.getElementById('journal-grid').innerHTML='';
+    journals.forEach(j=>{
+      const card=document.createElement('div');
+      card.className='journal-card';
+      card.innerHTML=`
+        <div class="journal-top">
+          <div class="journal-abbr">${j.abbr}</div>
+          <div><div class="journal-name">${j.name}</div><div class="journal-publisher">${j.publisher}</div></div>
+          <span class="if-badge" style="margin-left:auto;">IF ${j.if}</span>
+        </div>
+        <div style="font-size:0.78rem;color:var(--text2);line-height:1.5;margin-bottom:6px;">${j.scope}</div>
+        <div style="font-size:0.74rem;color:var(--accent);margin-bottom:10px;">✦ ${j.fit}</div>
+        <div class="journal-meta">
+          <div class="jm"><div class="jm-label">Style</div><div class="jm-val">${j.citation}</div></div>
+          <div class="jm"><div class="jm-label">Limit</div><div class="jm-val">${j.wordlimit}</div></div>
+          <div class="jm"><div class="jm-label">Review</div><div class="jm-val">${j.review_time}</div></div>
+          <div class="jm"><div class="jm-label">Indexed</div><div class="jm-val">${j.indexing}</div></div>
+        </div>
+        <div class="journal-guidelines">${j.guideline}</div>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button class="btn btn-ghost" style="font-size:0.72rem;flex:1;" onclick="toggleGuidelines(this)">📋 View Guidelines</button>
+          <button class="btn btn-primary" style="font-size:0.72rem;flex:1;" onclick="applyJournal('${j.name.replace(/'/g,"\\'")}','${j.citation}')">⚡ Apply to Formatter</button>
+        </div>`;
+      document.getElementById('journal-grid').appendChild(card);
+    });
+    showToast('✓ Found '+journals.length+' matching journals');
+  } catch(e) {
+    document.getElementById('journal-grid').innerHTML='<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--danger);">⚠ Error finding journals. Please try again.</div>';
+    showToast('⚠ Error: '+e.message);
+  }
+  document.getElementById('journal-loading').style.display='none';
+  document.getElementById('journal-btn').disabled=false;
+}
+
+function toggleGuidelines(btn) {
+  const card=btn.closest('.journal-card');
+  card.classList.toggle('expanded');
+  btn.textContent=card.classList.contains('expanded')?'▲ Hide Guidelines':'📋 View Guidelines';
+}
+
+function applyJournal(name, citation) {
+  document.getElementById('fmt-journal').value=name;
+  const sel=document.getElementById('fmt-citation');
+  for(let opt of sel.options){
+    if(opt.value.toLowerCase().includes(citation.toLowerCase())||citation.toLowerCase().includes(opt.value.split(' ')[0].toLowerCase())){opt.selected=true;break;}
+  }
+  showPanel('formatter');
+  showToast('✓ Journal applied to formatter!');
+}
+
+// ── LIT REVIEW ──
+function addSource() {
+  const inp=document.getElementById('source-input');
+  const text=inp.value.trim();
+  if(!text)return;
+  inp.value='';
+  S.sources.push({text,id:Date.now()});
+  renderSources();
+  showToast('✓ Source added');
+}
+
+function renderSources() {
+  const list=document.getElementById('source-list');
+  document.getElementById('source-count').textContent=S.sources.length+' added';
+  if(S.sources.length===0){list.innerHTML='<div style="text-align:center;padding:24px;color:var(--text3);font-size:0.8rem;">Add sources below to get started</div>';return;}
+  list.innerHTML='';
+  S.sources.forEach((s,i)=>{
+    const rel=Math.floor(Math.random()*30)+60;
+    const color=rel>80?'var(--success)':rel>65?'var(--accent)':'var(--gold)';
+    const div=document.createElement('div');
+    div.className='source-item';
+    div.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;"><div class="source-title">${s.text.substring(0,70)}${s.text.length>70?'...':''}</div><button onclick="removeSource(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:0.85rem;padding:0;flex-shrink:0;">✕</button></div><div class="source-meta">[${i+1}]</div><div class="rel-bar"><div class="rel-fill" style="width:${rel}%;background:${color};"></div></div>`;
+    list.appendChild(div);
+  });
+}
+
+function removeSource(idx) {
+  S.sources.splice(idx,1);
+  renderSources();
+}
+
+async function generateLitReview() {
+  if(S.sources.length===0){showToast('⚠ Add at least one source first');return;}
+  document.getElementById('litreview-loading').style.display='flex';
+  document.getElementById('litreview-btn').disabled=true;
+  document.getElementById('litreview-output').value='Generating literature review...';
+
+  const sourceList=S.sources.map((s,i)=>`[${i+1}] ${s.text}`).join('\n');
+  const prompt=`You are an expert academic writer. Generate a comprehensive literature review based on these sources:
+
+${sourceList}
+
+Write a formal academic literature review (600-900 words) that:
+1. Opens with a paragraph framing the research area and why it matters
+2. Has 2-3 thematic sections with clear subheadings (##)
+3. Synthesizes and compares across sources — don't just summarize one by one
+4. Uses proper in-text citations like (Author et al., Year) throughout
+5. Notes contradictions or debates in the literature
+6. Identifies research gaps
+7. Concludes with a paragraph on the current state of knowledge
+
+Write in formal academic style. Full paragraphs only. Make it sound human and scholarly.`;
+
+  try {
+    const result=await callClaude([{role:'user',content:prompt}],'',2000);
+    document.getElementById('litreview-output').value=result;
+    S.stats.reviews++; updateStats();
+    showToast('✓ Literature review generated!');
+  } catch(e) {
+    document.getElementById('litreview-output').value='⚠ Error generating review. Please try again.';
+    showToast('⚠ Error generating review');
+  }
+  document.getElementById('litreview-loading').style.display='none';
+  document.getElementById('litreview-btn').disabled=false;
+}
+
+// ── THESIS CONVERTER ──
+document.getElementById('thesis-input').addEventListener('input',function(){
+  document.getElementById('thesis-wc').textContent=this.value.trim().split(/\s+/).filter(w=>w).length+' words';
+});
+
+function selectThesisOption(el) {
+  document.querySelectorAll('#thesis-options .option-card').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+async function convertThesis() {
+  const input=document.getElementById('thesis-input').value.trim();
+  if(!input){showToast('⚠ Please paste your thesis content first');return;}
+  const optionEl=document.querySelector('#thesis-options .option-card.selected h4');
+  const convType=optionEl?optionEl.textContent:'Full Chapter → Article';
+  const journal=document.getElementById('thesis-journal').value;
+  const citStyle=document.getElementById('thesis-citation').value;
+
+  document.getElementById('thesis-progress').style.display='block';
+  document.getElementById('thesis-btn').disabled=true;
+  document.getElementById('thesis-output').style.display='none';
+  document.getElementById('thesis-copy-btn').style.display='none';
+
+  const msgs=['Analyzing thesis structure...','Identifying key contributions...','Restructuring to article format...','Condensing and refining prose...','Generating final manuscript...'];
+  let mi=0;
+  setStep(1,'active'); setStep(2,''); setStep(3,''); setStep(4,'');
+  const iv=setInterval(()=>{
+    if(mi<msgs.length){
+      document.getElementById('thesis-progress-text').textContent=msgs[mi];
+      if(mi>=1)setStep(Math.min(mi+1,4),'active');
+      if(mi>=1)setStep(mi,'done');
+      mi++;
+    }
+  },700);
+
+  const prompt=`You are an expert academic editor specializing in converting theses to journal articles.
+
+Conversion type: ${convType}
+Target journal: ${journal||'general academic journal'}
+Citation style: ${citStyle}
+
+Thesis content:
+"""
+${input.substring(0,4000)}
+"""
+
+Convert this into a publication-ready journal article. Include:
+
+**TITLE**
+[Concise, journal-style title]
+
+**ABSTRACT** (max 250 words)
+Background: ...
+Objectives: ...
+Methods: ...
+Results: ...
+Conclusion: ...
+
+**KEYWORDS**
+[5-7 keywords]
+
+**1. INTRODUCTION** (~500-600 words)
+[Background, research gap, study objectives — remove thesis preamble]
+
+**2. METHODS**
+[Concise third-person past tense]
+
+**3. RESULTS**
+[Key findings only]
+
+**4. DISCUSSION**
+[Interpretation, comparison with literature, limitations]
+
+**5. CONCLUSION**
+[1-2 paragraphs]
+
+**EDITOR'S NOTES**
+[3-5 specific changes made: e.g. "Removed chapter overview text from introduction", "Condensed background from 800 to 450 words", etc.]`;
+
+  try {
+    const result=await callClaude([{role:'user',content:prompt}],'',3000);
+    clearInterval(iv);
+    [1,2,3,4].forEach(n=>setStep(n,'done'));
+    document.getElementById('thesis-progress').style.display='none';
+    document.getElementById('thesis-output-text').textContent=result;
+    document.getElementById('thesis-output').style.display='block';
+    document.getElementById('thesis-copy-btn').style.display='flex';
+    showToast('✓ Thesis converted successfully!');
+  } catch(e) {
+    clearInterval(iv);
+    document.getElementById('thesis-progress').style.display='none';
+    document.getElementById('thesis-output-text').textContent='⚠ Conversion error. Please try again.';
+    document.getElementById('thesis-output').style.display='block';
+    showToast('⚠ Error: '+e.message);
+  }
+  document.getElementById('thesis-btn').disabled=false;
+}
+
+function setStep(n,cls){
+  const el=document.getElementById('step-'+n);
+  if(el)el.className='step'+(cls?' '+cls:'');
+}
+
+function copyThesisOutput(){
+  navigator.clipboard.writeText(document.getElementById('thesis-output-text').textContent);
+  showToast('✓ Copied to clipboard!');
+}
+
+// ── UTILS ──
+function copyText(id){
+  const el=document.getElementById(id);
+  navigator.clipboard.writeText(el.value||el.textContent);
+  showToast('✓ Copied to clipboard!');
+}
+function copyTextarea(id){
+  navigator.clipboard.writeText(document.getElementById(id).value);
+  showToast('✓ Copied to clipboard!');
+}
+function updateStats(){
+  document.getElementById('stat-formatted').textContent=S.stats.formatted;
+  document.getElementById('stat-citations').textContent=S.stats.citations;
+  document.getElementById('stat-chats').textContent=S.stats.chats;
+  document.getElementById('stat-reviews').textContent=S.stats.reviews;
+}
+let toastT;
+function showToast(msg){
+  document.querySelector('.toast')?.remove();
+  clearTimeout(toastT);
+  const t=document.createElement('div');
+  t.className='toast'; t.textContent=msg;
+  document.body.appendChild(t);
+  toastT=setTimeout(()=>t.remove(),3500);
+}
+</script>
+</body>
+</html>
