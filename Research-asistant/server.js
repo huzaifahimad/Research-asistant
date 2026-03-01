@@ -105,6 +105,4 @@ if (process.env.NODE_ENV !== 'production') {
         console.log(`  ╚══════════════════════════════════════╝\n`);
     });
 }
-
-// Export for Vercel serverless functions
 module.exports = app;
