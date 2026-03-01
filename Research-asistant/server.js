@@ -18,7 +18,11 @@ if (fs.existsSync(dbFile)) {
     } catch (e) { }
 }
 function saveDb() {
-    fs.writeFileSync(dbFile, JSON.stringify(db, null, 2));
+    try {
+        fs.writeFileSync(dbFile, JSON.stringify(db, null, 2));
+    } catch (e) {
+        console.warn('Skipping file write on Vercel read-only filesystem');
+    }
 }
 
 // ── Middleware ──
