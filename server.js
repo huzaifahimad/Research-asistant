@@ -30,10 +30,8 @@ app.use(cors());
 app.use(express.json({ limit: '5mb' }));
 
 // ── Static Files (serves public/ folder) ──
-const publicPath = path.join(process.cwd(), 'public');
+const publicPath = path.join(__dirname, 'public');
 app.use(express.static(publicPath));
-// Fallback to root for certain files if they were moved/missed
-app.use(express.static(process.cwd()));
 
 // ── API Routes ──
 
@@ -51,18 +49,15 @@ app.get('/api/stats', (req, res) => {
 // Proxy route for Google Gemini
 app.post('/api/ai/proxy', async (req, res) => {
     try {
-        const { GoogleGenAI } = require('@google/genai');
-        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        const { GoogleGenerativeAI } = require('@google/generative-ai');
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
         const { messages, system, maxTokens } = req.body;
 
         // Convert Claude message format to Gemini format
         let contents = [];
-        let systemInstruction = undefined;
-
-        if (system) {
-            systemInstruction = system;
-        }
+        let systemInstruction = system || undefined;
 
         // Map roles and structure messages
         for (const msg of messages) {
@@ -73,25 +68,24 @@ app.post('/api/ai/proxy', async (req, res) => {
             });
         }
 
-        const config = {
+        const generationConfig = {
             maxOutputTokens: maxTokens || 2048,
         };
 
-        if (systemInstruction) {
-            config.systemInstruction = systemInstruction;
-        }
-
-        const response = await ai.models.generateContent({
-            model: 'gemini-1.5-flash',
-            contents: contents,
-            config: config
+        const result = await model.generateContent({
+            contents,
+            systemInstruction,
+            generationConfig
         });
 
-        if (!response || !response.text) {
-            throw new Error("Invalid response format from Gemini");
+        const response = await result.response;
+        const text = response.text();
+
+        if (!text) {
+            throw new Error("Empty response from Gemini");
         }
 
-        res.json({ reply: response.text });
+        res.json({ reply: text });
     } catch (e) {
         console.error('API Error:', e.message);
         res.status(500).json({ error: e.message });
@@ -100,7 +94,7 @@ app.post('/api/ai/proxy', async (req, res) => {
 
 // ── SPA Fallback ──
 app.get('*', (req, res) => {
-    res.sendFile(path.join(process.cwd(), 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // ── Start Server ──
