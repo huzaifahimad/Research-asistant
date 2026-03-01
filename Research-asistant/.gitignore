@@ -1,3 +1,4 @@
 node_modules/
 .env
 scholarai.db
+scholarai_data.json
