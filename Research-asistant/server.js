@@ -30,7 +30,10 @@ app.use(cors());
 app.use(express.json({ limit: '5mb' }));
 
 // ── Static Files (serves public/ folder) ──
-app.use(express.static(path.join(__dirname, 'public')));
+const publicPath = path.join(process.cwd(), 'public');
+app.use(express.static(publicPath));
+// Fallback to root for certain files if they were moved/missed
+app.use(express.static(process.cwd()));
 
 // ── API Routes ──
 
@@ -97,7 +100,7 @@ app.post('/api/ai/proxy', async (req, res) => {
 
 // ── SPA Fallback ──
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(process.cwd(), 'public', 'index.html'));
 });
 
 // ── Start Server ──
