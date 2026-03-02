@@ -105,7 +105,7 @@ function Invoke-GeminiGeneration($messages, $system, $maxTokens) {
     if ($system) { $body.systemInstruction = @{ parts = @(@{ text = $system }) } }
 
     $jsonBody = $body | ConvertTo-Json -Depth 10
-    $uri = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$script:apiKey"
+    $uri = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$script:apiKey"
 
     $response = Invoke-RestMethod -Uri $uri -Method POST -ContentType "application/json" -Body $jsonBody
     return $response.candidates[0].content.parts[0].text

@@ -58,7 +58,7 @@ app.post('/api/ai/proxy', async (req, res) => {
             };
         }
 
-        const uri = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        const uri = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
         const response = await fetch(uri, {
             method: 'POST',
