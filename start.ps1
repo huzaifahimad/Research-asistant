@@ -10,23 +10,23 @@ $ErrorActionPreference = "Stop"
 
 # ── Read API key from .env ──
 $envFile = Join-Path $PSScriptRoot ".env"
-$apiKey = ""
+$script:apiKey = ""
 if (Test-Path $envFile) {
     Get-Content $envFile | ForEach-Object {
-        if ($_ -match "^ANTHROPIC_API_KEY=(.+)$") {
-            $apiKey = $Matches[1].Trim()
+        if ($_ -match "^GEMINI_API_KEY=(.+)$") {
+            $script:apiKey = $Matches[1].Trim()
         }
     }
 }
-if (-not $apiKey -or $apiKey -eq "YOUR_API_KEY_HERE") {
+if (-not $script:apiKey -or $script:apiKey -eq "YOUR_API_KEY_HERE") {
     Write-Host ""
     Write-Host "  ============================================" -ForegroundColor Yellow
     Write-Host "  SETUP REQUIRED: Edit .env file and set your" -ForegroundColor Yellow
-    Write-Host "  ANTHROPIC_API_KEY before starting the server" -ForegroundColor Yellow
+    Write-Host "  GEMINI_API_KEY before starting the server" -ForegroundColor Yellow
     Write-Host "  ============================================" -ForegroundColor Yellow
     Write-Host ""
-    $apiKey = Read-Host "Or paste your Anthropic API key now"
-    if (-not $apiKey) { exit 1 }
+    $script:apiKey = Read-Host "Or paste your Gemini API key now"
+    if (-not $script:apiKey) { exit 1 }
 }
 
 $publicDir = Join-Path $PSScriptRoot "public"
@@ -74,34 +74,41 @@ function Send-Response($context, $statusCode, $contentType, $body) {
     $context.Response.StatusCode = $statusCode
     $context.Response.ContentType = $contentType
     $context.Response.Headers.Add("Access-Control-Allow-Origin", "*")
-    $context.Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, x-api-key, anthropic-version")
+    $context.Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Authorization")
     $context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, OPTIONS, DELETE")
     if ($body -is [byte[]]) {
         $context.Response.OutputStream.Write($body, 0, $body.Length)
-    } else {
+    }
+    else {
         $buffer = [System.Text.Encoding]::UTF8.GetBytes($body)
         $context.Response.OutputStream.Write($buffer, 0, $buffer.Length)
     }
     $context.Response.Close()
 }
 
-function Call-Claude($messagesJson, $system, $maxTokens) {
+function Invoke-GeminiGeneration($messages, $system, $maxTokens) {
+    $contents = @()
+    foreach ($msg in $messages) {
+        $role = if ($msg.role -eq "assistant") { "model" } else { "user" }
+        $contents += @{
+            role  = $role
+            parts = @(@{ text = $msg.content })
+        }
+    }
+
     $body = @{
-        model = "claude-sonnet-4-6"
-        max_tokens = $maxTokens
-        messages = $messagesJson
+        contents         = $contents
+        generationConfig = @{
+            maxOutputTokens = if ($maxTokens) { $maxTokens } else { 2048 }
+        }
     }
-    if ($system) { $body.system = $system }
+    if ($system) { $body.systemInstruction = @{ parts = @(@{ text = $system }) } }
+
     $jsonBody = $body | ConvertTo-Json -Depth 10
+    $uri = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$script:apiKey"
 
-    $headers = @{
-        "Content-Type" = "application/json"
-        "x-api-key" = $apiKey
-        "anthropic-version" = "2023-06-01"
-    }
-
-    $response = Invoke-RestMethod -Uri "https://api.anthropic.com/v1/messages" -Method POST -Headers $headers -Body $jsonBody
-    return $response.content[0].text
+    $response = Invoke-RestMethod -Uri $uri -Method POST -ContentType "application/json" -Body $jsonBody
+    return $response.candidates[0].content.parts[0].text
 }
 
 # ── Main Loop ──
@@ -121,14 +128,14 @@ try {
         }
 
         try {
-            # ── API: Proxy to Claude ──
+            # ── API: Proxy to Gemini ──
             if ($path -eq "/api/ai/proxy" -and $method -eq "POST") {
                 $reader = New-Object System.IO.StreamReader($request.InputStream)
                 $bodyText = $reader.ReadToEnd()
                 $reader.Close()
                 $reqData = $bodyText | ConvertFrom-Json
 
-                $result = Call-Claude $reqData.messages $reqData.system $reqData.maxTokens
+                $result = Invoke-GeminiGeneration $reqData.messages $reqData.system $reqData.maxTokens
                 $resp = @{ reply = $result } | ConvertTo-Json -Depth 5
                 Send-Response $context 200 "application/json" $resp
                 continue
@@ -161,23 +168,27 @@ try {
                 $mime = if ($mimeTypes.ContainsKey($ext)) { $mimeTypes[$ext] } else { "application/octet-stream" }
                 $fileBytes = [System.IO.File]::ReadAllBytes($filePath)
                 Send-Response $context 200 $mime $fileBytes
-            } else {
+            }
+            else {
                 # SPA fallback
                 $indexPath = Join-Path $publicDir "index.html"
                 if (Test-Path $indexPath) {
                     $fileBytes = [System.IO.File]::ReadAllBytes($indexPath)
                     Send-Response $context 200 "text/html" $fileBytes
-                } else {
+                }
+                else {
                     Send-Response $context 404 "text/plain" "Not Found"
                 }
             }
-        } catch {
+        }
+        catch {
             Write-Host "  ERROR: $($_.Exception.Message)" -ForegroundColor Red
             $errResp = @{ error = $_.Exception.Message } | ConvertTo-Json
             Send-Response $context 500 "application/json" $errResp
         }
     }
-} finally {
+}
+finally {
     $listener.Stop()
     Write-Host "`nServer stopped." -ForegroundColor Yellow
 }

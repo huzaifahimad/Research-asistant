@@ -47,7 +47,7 @@ I have verified the application using a browser environment.
     Right-click [start.ps1](file:///c:/Research%20asistant/Research-asistant/start.ps1) and select **"Run with PowerShell"**.
 
 3.  **Access the Platform**:
-    Your browser will open automatically. Navigate to **http://localhost:3000** if it doesn't.
+    Your browser will open automatically. Navigate to **http://localhost:4000** if it doesn't.
 
 4.  **Start Researching**:
     Enter your name and you're in!

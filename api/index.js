@@ -1,4 +1,5 @@
 // ── ScholarAI Express Server (Vercel Native) ──
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -31,15 +32,11 @@ app.get('/api/stats', (req, res) => {
 // Proxy route for Google Gemini
 app.post('/api/ai/proxy', async (req, res) => {
     try {
-        const { GoogleGenerativeAI } = require('@google/generative-ai');
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
+        const fetch = require('node-fetch');
+        const apiKey = process.env.GEMINI_API_KEY;
         const { messages, system, maxTokens } = req.body;
 
         let contents = [];
-        let systemInstruction = system || undefined;
-
         for (const msg of messages) {
             const role = msg.role === 'assistant' ? 'model' : 'user';
             contents.push({
@@ -48,18 +45,34 @@ app.post('/api/ai/proxy', async (req, res) => {
             });
         }
 
-        const generationConfig = {
-            maxOutputTokens: maxTokens || 2048,
+        const body = {
+            contents,
+            generationConfig: {
+                maxOutputTokens: maxTokens || 2048,
+            }
         };
 
-        const result = await model.generateContent({
-            contents,
-            systemInstruction,
-            generationConfig
+        if (system) {
+            body.systemInstruction = {
+                parts: [{ text: system }]
+            };
+        }
+
+        const uri = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+        const response = await fetch(uri, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
         });
 
-        const response = await result.response;
-        const text = response.text();
+        const data = await response.json();
+
+        if (data.error) {
+            throw new Error(data.error.message || "API Error");
+        }
+
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!text) {
             throw new Error("Empty response from Gemini");
@@ -78,3 +91,11 @@ app.get('*', (req, res) => {
 });
 
 module.exports = app;
+
+// ── Local Development Server ──
+if (require.main === module) {
+    const port = process.env.PORT || 4000;
+    app.listen(port, () => {
+        console.log(`ScholarAI Express Server running at http://localhost:${port}`);
+    });
+}
