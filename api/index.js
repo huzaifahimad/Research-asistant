@@ -69,7 +69,10 @@ app.post('/api/ai/proxy', async (req, res) => {
         const data = await response.json();
 
         if (data.error) {
-            throw new Error(data.error.message || "API Error");
+            const msg = data.error.status === "RESOURCE_EXHAUSTED"
+                ? "Gemini API Quota Exhausted. Please wait 1 minute and try again."
+                : (data.error.message || "API Error");
+            throw new Error(msg);
         }
 
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
