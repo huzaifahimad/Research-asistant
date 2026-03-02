@@ -107,8 +107,23 @@ function Invoke-GeminiGeneration($messages, $system, $maxTokens) {
     $jsonBody = $body | ConvertTo-Json -Depth 10
     $uri = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$script:apiKey"
 
-    $response = Invoke-RestMethod -Uri $uri -Method POST -ContentType "application/json" -Body $jsonBody
-    return $response.candidates[0].content.parts[0].text
+    try {
+        $response = Invoke-RestMethod -Uri $uri -Method POST -ContentType "application/json" -Body $jsonBody
+        return $response.candidates[0].content.parts[0].text
+    }
+    catch {
+        $errObj = $_.Exception.Message
+        if ($_.Exception.InnerException -and $_.Exception.InnerException.Response) {
+            $reader = New-Object System.IO.StreamReader($_.Exception.InnerException.Response.GetResponseStream())
+            $errBody = $reader.ReadToEnd()
+            $reader.Close()
+            $errData = $errBody | ConvertFrom-Json
+            if ($errData.error) {
+                $errObj = $errData.error.message
+            }
+        }
+        throw $errObj
+    }
 }
 
 # ── Main Loop ──
