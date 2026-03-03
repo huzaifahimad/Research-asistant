@@ -5,34 +5,52 @@ const { authMiddleware } = require('./auth');
 const { getDb, incrementStat, getStats } = require('../db');
 
 const router = express.Router();
-const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+const GEMINI_KEY = process.env.GEMINI_API_KEY;
 
 // ── All AI routes require authentication ──
 router.use(authMiddleware);
 
 // ── Helper: call Anthropic Claude API ──
-async function callClaude(messages, system = '', maxTokens = 1500) {
-    const body = {
-        model: 'claude-sonnet-4-6',
-        max_tokens: maxTokens,
-        messages
-    };
-    if (system) body.system = system;
+async function callGemini(messages, system = '', maxTokens = 1500) {
+    let contents = [];
+    for (const msg of messages) {
+        const role = msg.role === 'assistant' ? 'model' : 'user';
+        contents.push({
+            role: role,
+            parts: [{ text: msg.content }]
+        });
+    }
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const body = {
+        contents,
+        generationConfig: {
+            maxOutputTokens: maxTokens || 2048,
+        }
+    };
+
+    if (system) {
+        body.systemInstruction = {
+            parts: [{ text: system }]
+        };
+    }
+
+    const uri = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
+
+    const response = await fetch(uri, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': ANTHROPIC_KEY,
-            'anthropic-version': '2023-06-01'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
     });
 
     const data = await response.json();
     if (data.error) throw new Error(data.error.message);
-    return data.content[0].text;
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) throw new Error("Empty response from Gemini");
+    return text;
 }
+
+// Keep the old name for convenience, or update all calls. I'll update all calls.
+const callClaude = callGemini;
 
 // ═══════════════════════════════════════════
 //  POST /api/ai/chat — Research AI Chat

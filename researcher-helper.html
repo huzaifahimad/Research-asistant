@@ -501,14 +501,12 @@ const S = { chatHistory:[], sources:[], stats:{formatted:0,citations:0,chats:0,r
 
 // ── API ──
 async function callClaude(messages, system='', maxTokens=1500) {
-  const body = { model:'claude-sonnet-4-6', max_tokens:maxTokens, messages };
-  if (system) body.system = system;
-  const r = await fetch('https://api.anthropic.com/v1/messages', {
-    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
+  const r = await fetch('/api/ai/proxy', {
+    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({messages, system, maxTokens})
   });
   const d = await r.json();
-  if (d.error) throw new Error(d.error.message);
-  return d.content[0].text;
+  if (d.error) throw new Error(d.error);
+  return d.reply;
 }
 
 // ── NAV ──
