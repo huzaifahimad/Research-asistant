@@ -13,7 +13,7 @@ $envFile = Join-Path $PSScriptRoot ".env"
 $script:apiKey = ""
 if (Test-Path $envFile) {
     Get-Content $envFile | ForEach-Object {
-        if ($_ -match "^GEMINI_API_KEY=(.+)$") {
+        if ($_ -match "^GROQ_API_KEY=(.+)$") {
             $script:apiKey = $Matches[1].Trim()
         }
     }
@@ -22,10 +22,10 @@ if (-not $script:apiKey -or $script:apiKey -eq "YOUR_API_KEY_HERE") {
     Write-Host ""
     Write-Host "  ============================================" -ForegroundColor Yellow
     Write-Host "  SETUP REQUIRED: Edit .env file and set your" -ForegroundColor Yellow
-    Write-Host "  GEMINI_API_KEY before starting the server" -ForegroundColor Yellow
+    Write-Host "  GROQ_API_KEY before starting the server" -ForegroundColor Yellow
     Write-Host "  ============================================" -ForegroundColor Yellow
     Write-Host ""
-    $script:apiKey = Read-Host "Or paste your Gemini API key now"
+    $script:apiKey = Read-Host "Or paste your Groq API key now"
     if (-not $script:apiKey) { exit 1 }
 }
 
@@ -86,30 +86,41 @@ function Send-Response($context, $statusCode, $contentType, $body) {
     $context.Response.Close()
 }
 
-function Invoke-GeminiGeneration($messages, $system, $maxTokens) {
-    $contents = @()
+function Invoke-GroqGeneration($messages, $system, $maxTokens) {
+    $apiMessages = @()
+
+    if ($system) {
+        $apiMessages += @{
+            role    = "system"
+            content = $system
+        }
+    }
+
     foreach ($msg in $messages) {
-        $role = if ($msg.role -eq "assistant") { "model" } else { "user" }
-        $contents += @{
-            role  = $role
-            parts = @(@{ text = $msg.content })
+        $role = if ($msg.role -eq "model") { "assistant" } else { $msg.role }
+        $apiMessages += @{
+            role    = $role
+            content = $msg.content
         }
     }
 
     $body = @{
-        contents         = $contents
-        generationConfig = @{
-            maxOutputTokens = if ($maxTokens) { $maxTokens } else { 2048 }
-        }
+        model       = "llama-3.3-70b-versatile"
+        messages    = $apiMessages
+        max_tokens  = if ($maxTokens) { $maxTokens } else { 2048 }
+        temperature = 0.7
     }
-    if ($system) { $body.systemInstruction = @{ parts = @(@{ text = $system }) } }
 
     $jsonBody = $body | ConvertTo-Json -Depth 10
-    $uri = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$script:apiKey"
+    $uri = "https://api.groq.com/openai/v1/chat/completions"
 
     try {
-        $response = Invoke-RestMethod -Uri $uri -Method POST -ContentType "application/json" -Body $jsonBody
-        return $response.candidates[0].content.parts[0].text
+        $headers = @{
+            "Authorization" = "Bearer $script:apiKey"
+            "Content-Type"  = "application/json"
+        }
+        $response = Invoke-RestMethod -Uri $uri -Method POST -Headers $headers -Body $jsonBody -ContentType "application/json"
+        return $response.choices[0].message.content
     }
     catch {
         $errObj = $_.Exception.Message
@@ -150,7 +161,7 @@ try {
                 $reader.Close()
                 $reqData = $bodyText | ConvertFrom-Json
 
-                $result = Invoke-GeminiGeneration $reqData.messages $reqData.system $reqData.maxTokens
+                $result = Invoke-GroqGeneration $reqData.messages $reqData.system $reqData.maxTokens
                 $resp = @{ reply = $result } | ConvertTo-Json -Depth 5
                 Send-Response $context 200 "application/json" $resp
                 continue

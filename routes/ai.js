@@ -1,56 +1,54 @@
-// ── AI Routes (Claude API Proxy + Data Persistence) ──
+// ── AI Routes (Groq API Proxy + Data Persistence) ──
 const express = require('express');
 const fetch = require('node-fetch');
 const { authMiddleware } = require('./auth');
 const { getDb, incrementStat, getStats } = require('../db');
 
 const router = express.Router();
-const GEMINI_KEY = process.env.GEMINI_API_KEY;
+const GROQ_KEY = process.env.GROQ_API_KEY;
 
 // ── All AI routes require authentication ──
 router.use(authMiddleware);
 
-// ── Helper: call Anthropic Claude API ──
-async function callGemini(messages, system = '', maxTokens = 1500) {
-    let contents = [];
+// ── Helper: call Groq API (OpenAI-compatible) ──
+async function callGroq(messages, system = '', maxTokens = 1500) {
+    const apiMessages = [];
+
+    if (system) {
+        apiMessages.push({ role: 'system', content: system });
+    }
+
     for (const msg of messages) {
-        const role = msg.role === 'assistant' ? 'model' : 'user';
-        contents.push({
-            role: role,
-            parts: [{ text: msg.content }]
+        apiMessages.push({
+            role: msg.role === 'model' ? 'assistant' : msg.role,
+            content: msg.content
         });
     }
 
     const body = {
-        contents,
-        generationConfig: {
-            maxOutputTokens: maxTokens || 2048,
-        }
+        model: 'llama-3.3-70b-versatile',
+        messages: apiMessages,
+        max_tokens: maxTokens || 2048,
+        temperature: 0.7
     };
 
-    if (system) {
-        body.systemInstruction = {
-            parts: [{ text: system }]
-        };
-    }
-
-    const uri = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
-
-    const response = await fetch(uri, {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${GROQ_KEY}`
+        },
         body: JSON.stringify(body)
     });
 
     const data = await response.json();
-    if (data.error) throw new Error(data.error.message);
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) throw new Error("Empty response from Gemini");
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    const text = data.choices?.[0]?.message?.content;
+    if (!text) throw new Error("Empty response from Groq");
     return text;
 }
 
-// Keep the old name for convenience, or update all calls. I'll update all calls.
-const callClaude = callGemini;
+const callClaude = callGroq;
 
 // ═══════════════════════════════════════════
 //  POST /api/ai/chat — Research AI Chat

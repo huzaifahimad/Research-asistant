@@ -29,40 +29,39 @@ app.get('/api/stats', (req, res) => {
     res.json(db.stats);
 });
 
-// Proxy route for Google Gemini
+// Proxy route for Groq API
 app.post('/api/ai/proxy', async (req, res) => {
     try {
         const fetch = require('node-fetch');
-        const apiKey = process.env.GEMINI_API_KEY;
+        const apiKey = process.env.GROQ_API_KEY;
         const { messages, system, maxTokens } = req.body;
 
-        let contents = [];
+        const apiMessages = [];
+
+        if (system) {
+            apiMessages.push({ role: 'system', content: system });
+        }
+
         for (const msg of messages) {
-            const role = msg.role === 'assistant' ? 'model' : 'user';
-            contents.push({
-                role: role,
-                parts: [{ text: msg.content }]
+            apiMessages.push({
+                role: msg.role === 'model' ? 'assistant' : msg.role,
+                content: msg.content
             });
         }
 
         const body = {
-            contents,
-            generationConfig: {
-                maxOutputTokens: maxTokens || 2048,
-            }
+            model: 'llama-3.3-70b-versatile',
+            messages: apiMessages,
+            max_tokens: maxTokens || 2048,
+            temperature: 0.7
         };
 
-        if (system) {
-            body.systemInstruction = {
-                parts: [{ text: system }]
-            };
-        }
-
-        const uri = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-        const response = await fetch(uri, {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
             body: JSON.stringify(body)
         });
 
@@ -72,10 +71,10 @@ app.post('/api/ai/proxy', async (req, res) => {
             throw new Error(data.error.message || "API Error");
         }
 
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const text = data.choices?.[0]?.message?.content;
 
         if (!text) {
-            throw new Error("Empty response from Gemini");
+            throw new Error("Empty response from Groq");
         }
 
         res.json({ reply: text });
