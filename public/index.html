@@ -13,6 +13,8 @@
 
 <body>
 
+    <div id="mobile-overlay" class="mobile-overlay" onclick="toggleSidebar()"></div>
+
     <!-- AUTH MODAL -->
     <div id="auth-overlay" class="auth-overlay">
         <div class="auth-modal">
@@ -86,6 +88,7 @@
         <!-- DASHBOARD -->
         <div id="panel-home" class="panel active">
             <div class="topbar">
+                <button id="mobile-menu-btn" class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
                 <h1>Research Dashboard</h1>
                 <div class="topbar-actions"><button class="btn btn-primary" onclick="showPanel('chat')">+ New
                         Chat</button></div>
@@ -168,6 +171,7 @@
         <!-- ARTICLE FORMATTER -->
         <div id="panel-formatter" class="panel">
             <div class="topbar">
+                <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
                 <h1>Article Formatter</h1>
                 <div class="topbar-actions"><button class="btn btn-ghost" onclick="copyText('format-output')">📋
                         Copy</button><button class="btn btn-primary" id="fmt-btn" onclick="runFormatter()">▶ Format
@@ -249,6 +253,7 @@
         <!-- LITERATURE REVIEW -->
         <div id="panel-litreview" class="panel">
             <div class="topbar">
+                <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
                 <h1>Literature Review Generator</h1>
                 <div class="topbar-actions"><button class="btn btn-ghost" onclick="copyTextarea('litreview-output')">📋
                         Copy</button><button class="btn btn-primary" id="litreview-btn" onclick="generateLitReview()">📝
@@ -284,6 +289,7 @@
         <!-- JOURNAL FINDER -->
         <div id="panel-journal" class="panel">
             <div class="topbar">
+                <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
                 <h1>Journal Finder</h1>
                 <div class="topbar-actions"><button class="btn btn-primary" id="journal-btn" onclick="findJournals()">🔍
                         Search Journals</button></div>
@@ -317,6 +323,7 @@
         <!-- CITATION VERIFIER -->
         <div id="panel-citation" class="panel">
             <div class="topbar">
+                <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
                 <h1>Citation Verifier</h1>
                 <div class="topbar-actions">
                     <div id="cite-loading" style="display:none;">
@@ -350,6 +357,7 @@
         <!-- THESIS CONVERTER -->
         <div id="panel-thesis" class="panel">
             <div class="topbar">
+                <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
                 <h1>Thesis → Article Converter</h1>
                 <div class="topbar-actions"><button class="btn btn-ghost" id="thesis-copy-btn"
                         onclick="copyThesisOutput()" style="display:none;">📋 Copy</button><button class="btn btn-gold"
@@ -417,6 +425,7 @@
         <!-- RESEARCH CHAT -->
         <div id="panel-chat" class="panel">
             <div class="topbar">
+                <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
                 <h1>Research AI Chat</h1>
                 <div class="topbar-actions"><button class="btn btn-ghost" onclick="clearChat()">🗑 Clear</button></div>
             </div>
